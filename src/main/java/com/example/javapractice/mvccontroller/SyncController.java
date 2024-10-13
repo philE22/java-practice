@@ -39,28 +39,31 @@ public class SyncController {
 
     // A 작업 메서드
     private String doA() throws Exception {
-        int millis = random.nextInt(2000);
+        int millis = getMillis();
         System.out.println("A 작업 시작 - 스레드 : " + Thread.currentThread().getName() + ", sleep : " + millis);
         Thread.sleep(millis);
-        // A 작업 로직
         return "ResultA";
     }
 
     // B 작업 메서드
     private String doB(String input) throws Exception {
-        int millis = random.nextInt(2000);
+        int millis = getMillis();
         System.out.println("B 작업 시작 - 스레드 : " + Thread.currentThread().getName() + ", sleep : " + millis);
         Thread.sleep(millis);
-        // B 작업 로직
         return "ResultB";
     }
 
     // C 작업 메서드
     private String doC(String input) throws Exception {
-        int millis = random.nextInt(2000);
+        int millis = getMillis();
         System.out.println("C 작업 시작 - 스레드 : " + Thread.currentThread().getName() + ", sleep : " + millis);
         Thread.sleep(millis);
-        // C 작업 로직
         return "ResultC";
+    }
+
+    private int getMillis() {
+        int millis = random.nextInt(2000);
+//        return millis;
+        return 2000;
     }
 }

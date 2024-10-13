@@ -27,23 +27,29 @@ public class AsyncController {
     }
 
     private Mono<String> doA() {
-        int millis = random.nextInt(2000);
+        int millis = getMillis();
         System.out.println("A 작업 시작 - 스레드 : " + Thread.currentThread().getName() + ", sleep : " + millis);
         return Mono.just("A Result")
                 .delayElement(Duration.ofMillis(millis));
     }
 
     private Mono<String> doB(String input) {
-        int millis = random.nextInt(2000);
+        int millis = getMillis();
         System.out.println("B 작업 시작 - 스레드 : " + Thread.currentThread().getName() + ", sleep : " + millis);
         return Mono.just("B Result")
                 .delayElement(Duration.ofMillis(millis));
     }
 
     private Mono<String> doC(String input) {
-        int millis = random.nextInt(2000);
+        int millis = getMillis();
         System.out.println("C 작업 시작 - 스레드 : " + Thread.currentThread().getName() + ", sleep : " + millis);
         return Mono.just("C Result")
                 .delayElement(Duration.ofMillis(millis));
+    }
+
+    private int getMillis() {
+        int millis = random.nextInt(2000);
+//        return millis;
+        return 2000;
     }
 }
