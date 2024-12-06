@@ -1,11 +1,30 @@
 spring:
   application:
     name: javapractice
+  datasource:
+    url: jdbc:h2:mem:testdb  # H2 메모리 데이터베이스 URL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true           # H2 콘솔 활성화
+      path: /h2-console       # H2 콘솔 경로 설정
+  sql:
+    init:
+      mode: always
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.javapractice.mybatis  # 모델 클래스 패키지
+logging:
+  level:
+    root: info
+    com.example.javapractice: debug  # 필요한 패키지 이름으로 변경
+    org.mybatis: debug              # MyBatis SQL 로깅 활성화
 server:
   tomcat:
     threads:
-      max: 3                  # ??? ? ?? thread? ? ??
-    max-connections: 8192     # ????? connection? ? ??
-    accept-count: 100         # ???? ???
-    connection-timeout: 20000 # timeout ?? ?? ??, 20?
-
+      max: 3
+    max-connections: 8192
+    accept-count: 100
+    connection-timeout: 20000
