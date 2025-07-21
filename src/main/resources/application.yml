@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb  # H2 메모리 데이터베이스 URL
+    url: jdbc:h2:file:/Users/phile/GitHub/javapractice/src/main/resources/data/practice;AUTO_SERVER=true
     driver-class-name: org.h2.Driver
     username: sa
     password:
