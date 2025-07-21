@@ -3,7 +3,7 @@ package com.example.javapractice.jpa.domain;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
-@Entity
+//@Entity
 public class Movie {
 
     @Id
