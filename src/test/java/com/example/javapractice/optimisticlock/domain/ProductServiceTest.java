@@ -6,13 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,26 +61,19 @@ class ProductServiceTest {
         AtomicInteger successCount = new AtomicInteger();
         AtomicInteger failureCount = new AtomicInteger();
 
-        try (ExecutorService es = Executors.newFixedThreadPool(threadCount)) {
-            List<Future<Void>> futures = new ArrayList<>();
+        List<CompletableFuture<Void>> list = IntStream.range(0, threadCount)
+                .mapToObj(i -> CompletableFuture.runAsync(() -> {
+                            try {
+                                productService.decreaseStock(savedId, 1);
+                                successCount.incrementAndGet();
+                            } catch (ObjectOptimisticLockingFailureException e) {
+                                log.error("낙관적락 실패 처리 필요!");
+                                failureCount.incrementAndGet();
+                            }
+                        })
+                ).toList();
 
-            for (int i = 0; i < threadCount; i++) {
-                Future<Void> future = es.submit(() -> {
-                    try {
-                        productService.decreaseStock(savedId, 1);
-                        successCount.incrementAndGet();
-                    } catch (ObjectOptimisticLockingFailureException e) {
-                        log.error("낙관적락 실패 처리 필요!");
-                        failureCount.incrementAndGet();
-                    }
-                    return null;
-                });
-                futures.add(future);
-            }
-            for (Future<Void> future : futures) {
-                future.get();
-            }
-        }
+        CompletableFuture.allOf(list.toArray(new CompletableFuture[0])).join();
 
         log.info("성공한 시도: {}", successCount.get());
         log.info("실패한 시도: {}", failureCount.get());
