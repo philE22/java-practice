@@ -1,5 +1,6 @@
 package com.example.javapractice.optimisticlock.domain;
 
+import com.example.javapractice.optimisticlock.ProductController;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,8 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -20,6 +20,8 @@ class ProductServiceTest {
 
     @Autowired
     private ProductService productService;
+    @Autowired
+    private ProductController productController;
 
     @Test
     void 생성() {
@@ -50,7 +52,7 @@ class ProductServiceTest {
     }
 
     @Test
-    void 낙관적락_에러_테스트() throws ExecutionException, InterruptedException {
+    void 낙관적락_에러_테스트() {
         Product product = Product.builder()
                 .name("아이폰")
                 .quantity(100)
@@ -82,6 +84,42 @@ class ProductServiceTest {
         assertThat(result.getQuantity()).isEqualTo(100 - successCount.get());
     }
 
-    //TODO 낙관적락 / 비관적락 / synchronized 성능 비교 테스트도 진행
+    @Test
+    void 낙관적락_재시도_테스트() {
+        Product product = Product.builder()
+                .name("아이폰")
+                .quantity(100)
+                .build();
+        Long savedId = productService.save(product);
 
+        CountDownLatch startGate = new CountDownLatch(1);
+        int threadCount = 10;
+
+        try (ExecutorService es = Executors.newVirtualThreadPerTaskExecutor()) {
+            var futures = IntStream.range(0, threadCount)
+                    .mapToObj(i -> es.submit(() -> {
+                                startGate.await();
+                                productController.buyWithRetry(savedId, 1);
+                                return null;
+                            })
+                    ).toList();
+
+            // 동시에 시작
+            startGate.countDown();
+
+            // 모든 작업 완료 대기
+            futures.forEach(f -> {
+                try {
+                    f.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        Product result = productService.findBy(savedId);
+        assertThat(result.getQuantity()).isEqualTo(100 - threadCount);
+    }
+
+    //TODO 낙관적락 / 비관적락 / synchronized 성능 비교 테스트도 진행
 }

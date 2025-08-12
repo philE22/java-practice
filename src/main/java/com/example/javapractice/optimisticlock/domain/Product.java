@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA 스펙은 private 이 아님!
 public class Product {
 
     @Id @GeneratedValue
