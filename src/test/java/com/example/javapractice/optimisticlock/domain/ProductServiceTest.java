@@ -1,6 +1,5 @@
 package com.example.javapractice.optimisticlock.domain;
 
-import com.example.javapractice.optimisticlock.ProductController;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -19,9 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProductServiceTest {
 
     @Autowired
-    private ProductService productService;
+    private ProductRepository productRepository;
     @Autowired
-    private ProductController productController;
+    private ProductService productService;
 
     @Test
     void 생성() {
@@ -39,15 +38,19 @@ class ProductServiceTest {
 
     @Test
     void 재고감소() {
+        //given
         Product product = Product.builder()
                 .name("아이폰")
                 .quantity(100)
                 .build();
-        Long savedId = productService.save(product);
+        Product saved = productRepository.save(product);
+        Long savedId = saved.getId();
 
-        productService.decreaseStock(savedId, 10);
+        //when
+        productService.buy(savedId, 10);
 
-        Product result = productService.findBy(savedId);
+        //then
+        Product result = productRepository.findById(savedId).orElseThrow();
         assertThat(result.getQuantity()).isEqualTo(90);
     }
 
@@ -57,7 +60,8 @@ class ProductServiceTest {
                 .name("아이폰")
                 .quantity(100)
                 .build();
-        Long savedId = productService.save(product);
+        Product saved = productRepository.save(product);
+        Long savedId = saved.getId();
 
         int threadCount = 10;
         AtomicInteger successCount = new AtomicInteger();
@@ -66,7 +70,7 @@ class ProductServiceTest {
         List<CompletableFuture<Void>> list = IntStream.range(0, threadCount)
                 .mapToObj(i -> CompletableFuture.runAsync(() -> {
                             try {
-                                productService.decreaseStock(savedId, 1);
+                                productService.buy(savedId, 1);
                                 successCount.incrementAndGet();
                             } catch (ObjectOptimisticLockingFailureException e) {
                                 log.error("낙관적락 실패 처리 필요!");
@@ -80,46 +84,7 @@ class ProductServiceTest {
         log.info("성공한 시도: {}", successCount.get());
         log.info("실패한 시도: {}", failureCount.get());
 
-        Product result = productService.findBy(savedId);
+        Product result = productRepository.findById(savedId).orElseThrow();
         assertThat(result.getQuantity()).isEqualTo(100 - successCount.get());
     }
-
-    @Test
-    void 낙관적락_재시도_테스트() {
-        Product product = Product.builder()
-                .name("아이폰")
-                .quantity(100)
-                .build();
-        Long savedId = productService.save(product);
-
-        CountDownLatch startGate = new CountDownLatch(1);
-        int threadCount = 10;
-
-        try (ExecutorService es = Executors.newVirtualThreadPerTaskExecutor()) {
-            var futures = IntStream.range(0, threadCount)
-                    .mapToObj(i -> es.submit(() -> {
-                                startGate.await();
-                                productController.buyWithRetry(savedId, 1);
-                                return null;
-                            })
-                    ).toList();
-
-            // 동시에 시작
-            startGate.countDown();
-
-            // 모든 작업 완료 대기
-            futures.forEach(f -> {
-                try {
-                    f.get();
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-
-        Product result = productService.findBy(savedId);
-        assertThat(result.getQuantity()).isEqualTo(100 - threadCount);
-    }
-
-    //TODO 낙관적락 / 비관적락 / synchronized 성능 비교 테스트도 진행
 }

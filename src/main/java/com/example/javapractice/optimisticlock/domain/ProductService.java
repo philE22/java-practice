@@ -23,7 +23,7 @@ public class ProductService {
     }
 
     @Transactional
-    public void decreaseStock(Long productId, int quantity) {
+    public void buy(Long productId, int quantity) {
         Product product = findBy(productId);
         product.decreaseQuantity(quantity);
     }

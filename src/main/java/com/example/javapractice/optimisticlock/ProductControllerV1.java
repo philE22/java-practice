@@ -12,7 +12,7 @@ import java.util.Random;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-public class ProductController {
+public class ProductControllerV1 {
 
     private final ProductService service;
     private Random random = new Random();
@@ -23,7 +23,7 @@ public class ProductController {
 
         while (retry != 0) {
             try {
-                service.decreaseStock(productId, stock);
+                service.buy(productId, stock);
                 return;
             } catch (ObjectOptimisticLockingFailureException e) {
                 log.error("낙관적락 발생!");
