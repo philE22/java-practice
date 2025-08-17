@@ -1,6 +1,7 @@
 package com.example.javapractice.optimisticlock;
 
 import com.example.javapractice.optimisticlock.domain.ProductService;
+import com.example.javapractice.optimisticlock.retry.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -12,13 +13,13 @@ import java.util.Random;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-public class ProductControllerV1 {
+public class ProductController {
 
     private final ProductService service;
     private Random random = new Random();
 
-    @PostMapping
-    public void buyWithRetry(Long productId, int stock) {
+    @PostMapping("/v1")
+    public void buyWithRetryV1(Long productId, int stock) {
         int retry = 3;
 
         while (retry != 0) {
@@ -36,4 +37,11 @@ public class ProductControllerV1 {
             }
         }
     }
+
+    @Retry(maxRetries = 10)
+    @PostMapping("/v2")
+    public void buyWithRetryV2(Long productId, int stock) {
+        service.buy(productId, stock);
+    }
+
 }
