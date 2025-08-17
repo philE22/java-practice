@@ -44,4 +44,9 @@ public class ProductController {
         service.buy(productId, stock);
     }
 
+    @PostMapping("/v3")
+    public void buyWithRetryV3(Long productId, int stock) {
+        service.buyWithRetryable(productId, stock);
+    }
+
 }

@@ -105,5 +105,43 @@ public class OptimisticLockTest {
             assertThat(result.getQuantity()).isEqualTo(100 - threadCount);
             log.info("결과! 재고: {}", result.getQuantity());
         }
+
+        @Test
+        void V3_Retryable_사용() {
+            Product product = Product.builder()
+                    .name("아이폰")
+                    .quantity(100)
+                    .build();
+            Product savedProduct = productRepository.save(product);
+
+            CountDownLatch startGate = new CountDownLatch(1);
+            int threadCount = 10;
+
+            try (ExecutorService es = Executors.newVirtualThreadPerTaskExecutor()) {
+                var futures = IntStream.range(0, threadCount)
+                        .mapToObj(i -> es.submit(() -> {
+                                    startGate.await();
+                                    controller.buyWithRetryV3(savedProduct.getId(), 1);
+                                    return null;
+                                })
+                        ).toList();
+
+                // 동시에 시작
+                startGate.countDown();
+
+                // 모든 작업 완료 대기
+                futures.forEach(f -> {
+                    try {
+                        f.get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            Product result = productRepository.findById(savedProduct.getId()).get();
+            assertThat(result.getQuantity()).isEqualTo(100 - threadCount);
+            log.info("결과! 재고: {}", result.getQuantity());
+        }
     }
 }

@@ -1,14 +1,12 @@
 package com.example.javapractice.optimisticlock.retry;
 
-import jakarta.persistence.OptimisticLockException;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.hibernate.StaleObjectStateException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -28,7 +26,7 @@ public class OptimisticLockRetryAspect {
         for (int attempt = 0; attempt < retry.maxRetries(); attempt++) {
             try {
                 return joinPoint.proceed();
-            } catch (OptimisticLockException | ObjectOptimisticLockingFailureException | StaleObjectStateException e) {
+            } catch (OptimisticLockingFailureException e) {
                 log.error("{} 번 낙관적락 발생!", attempt + 1);
                 exceptionHolder = e;
                 Thread.sleep(retry.retryDelay());

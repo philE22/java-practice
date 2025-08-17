@@ -1,6 +1,12 @@
 package com.example.javapractice.optimisticlock.domain;
 
+import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.StaleObjectStateException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +30,24 @@ public class ProductService {
 
     @Transactional
     public void buy(Long productId, int quantity) {
+        Product product = findBy(productId);
+        product.decreaseQuantity(quantity);
+    }
+
+    @Retryable(
+            retryFor = {
+                    // 상위 계층 예외로 변환되어 예외가 올라오기 때문에 이 예외만 잡아도 됨
+                    OptimisticLockingFailureException.class,    // spring dao 예외
+//                    ObjectOptimisticLockingFailureException.class, // Spring jpa 예외
+//                    StaleObjectStateException.class // Hibernate 예외
+
+//                    OptimisticLockException.class // Jpa 표준 예외 - 이건 실제로 발생하지 않음
+            },
+            maxAttempts = 10,
+            backoff = @Backoff(delay = 100L)
+    )
+    @Transactional
+    public void buyWithRetryable(Long productId, int quantity) {
         Product product = findBy(productId);
         product.decreaseQuantity(quantity);
     }
