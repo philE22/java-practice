@@ -18,13 +18,13 @@ public class ProductController {
     private final ProductService service;
     private Random random = new Random();
 
-    @PostMapping("/v1")
-    public void buyWithRetryV1(Long productId, int stock) {
+    @PostMapping("/optimistic/v1")
+    public void buyWithRetryV1(Long productId, Integer quantity) {
         int retry = 3;
 
         while (retry != 0) {
             try {
-                service.buy(productId, stock);
+                service.buy(productId, quantity);
                 return;
             } catch (ObjectOptimisticLockingFailureException e) {
                 log.error("낙관적락 발생!");
@@ -39,14 +39,18 @@ public class ProductController {
     }
 
     @Retry(maxRetries = 10)
-    @PostMapping("/v2")
-    public void buyWithRetryV2(Long productId, int stock) {
-        service.buy(productId, stock);
+    @PostMapping("/optimistic/v2")
+    public void buyWithRetryV2(Long productId, Integer quantity) {
+        service.buy(productId, quantity);
     }
 
-    @PostMapping("/v3")
-    public void buyWithRetryV3(Long productId, int stock) {
-        service.buyWithRetryable(productId, stock);
+    @PostMapping("/optimistic/v3")
+    public void buyWithRetryV3(Long productId, Integer quantity) {
+        service.buyWithRetryable(productId, quantity);
     }
 
+    @PostMapping("/pessimistic/v1")
+    public void buyWithPessimistic(Long productId, Integer quantity) {
+        service.buyWithPessimisticLock(productId, quantity);
+    }
 }

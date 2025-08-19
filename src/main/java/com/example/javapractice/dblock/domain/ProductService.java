@@ -26,7 +26,7 @@ public class ProductService {
     }
 
     @Transactional
-    public void buy(Long productId, int quantity) {
+    public void buy(Long productId, Integer quantity) {
         Product product = findBy(productId);
         product.decreaseQuantity(quantity);
     }
@@ -43,9 +43,17 @@ public class ProductService {
             maxAttempts = 10,
             backoff = @Backoff(delay = 100L)
     )
+
     @Transactional
-    public void buyWithRetryable(Long productId, int quantity) {
+    public void buyWithRetryable(Long productId, Integer quantity) {
         Product product = findBy(productId);
+        product.decreaseQuantity(quantity);
+    }
+
+    @Transactional
+    public void buyWithPessimisticLock(Long productId, Integer quantity) {
+        Product product = repository.findByIdForUpdate(productId)
+                .orElseThrow(() -> new NoSuchElementException("없는 product입니다."));
         product.decreaseQuantity(quantity);
     }
 }

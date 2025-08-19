@@ -20,8 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 @SpringBootTest
 public class OptimisticLockTest {
-    //TODO 낙관적락 / 비관적락 / synchronized 성능 비교 테스트도 진행
-
     @Autowired
     ProductRepository productRepository;
     @Autowired
