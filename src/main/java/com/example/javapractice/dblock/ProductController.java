@@ -1,7 +1,7 @@
-package com.example.javapractice.optimisticlock;
+package com.example.javapractice.dblock;
 
-import com.example.javapractice.optimisticlock.domain.ProductService;
-import com.example.javapractice.optimisticlock.retry.Retry;
+import com.example.javapractice.dblock.domain.ProductService;
+import com.example.javapractice.dblock.retry.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;

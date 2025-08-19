@@ -1,4 +1,4 @@
-package com.example.javapractice.optimisticlock.retry;
+package com.example.javapractice.dblock.retry;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

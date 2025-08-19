@@ -1,7 +1,7 @@
-package com.example.javapractice.optimisticlock;
+package com.example.javapractice.dblock;
 
-import com.example.javapractice.optimisticlock.domain.Product;
-import com.example.javapractice.optimisticlock.domain.ProductRepository;
+import com.example.javapractice.dblock.domain.Product;
+import com.example.javapractice.dblock.domain.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

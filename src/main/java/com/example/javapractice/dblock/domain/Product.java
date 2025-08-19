@@ -1,4 +1,4 @@
-package com.example.javapractice.optimisticlock.domain;
+package com.example.javapractice.dblock.domain;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
