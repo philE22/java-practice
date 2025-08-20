@@ -43,7 +43,6 @@ public class ProductService {
             maxAttempts = 10,
             backoff = @Backoff(delay = 100L)
     )
-
     @Transactional
     public void buyWithRetryable(Long productId, Integer quantity) {
         Product product = findBy(productId);

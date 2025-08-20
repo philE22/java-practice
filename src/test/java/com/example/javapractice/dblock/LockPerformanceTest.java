@@ -39,7 +39,7 @@ public class LockPerformanceTest {
                     .mapToObj(i -> es.submit(() -> {
                                 startGate.await();
                                 long start = System.nanoTime();
-                                controller.buyWithRetryV3(savedProduct.getId(), 1);
+                                controller.buy(savedProduct.getId(), 1);
                                 long end = System.nanoTime();
                                 return end - start; // duration in nanos
                             })
@@ -57,7 +57,7 @@ public class LockPerformanceTest {
                     totalNanos += duration;
                     completed++;
                 } catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
+                    log.error("낙관적락 발생!");
                 }
             }
 
@@ -66,7 +66,7 @@ public class LockPerformanceTest {
         }
 
         Product result = productRepository.findById(savedProduct.getId()).get();
-        assertThat(result.getQuantity()).isEqualTo(1000 - threadCount);
+        assertThat(result.getQuantity()).isNotEqualTo(1000 - threadCount);
         log.info("결과! 재고: {}", result.getQuantity());
     }
 
@@ -116,5 +116,4 @@ public class LockPerformanceTest {
         assertThat(result.getQuantity()).isEqualTo(1000 - threadCount);
         log.info("결과! 재고: {}", result.getQuantity());
     }
-
 }

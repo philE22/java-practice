@@ -18,6 +18,11 @@ public class ProductController {
     private final ProductService service;
     private Random random = new Random();
 
+    @PostMapping
+    public void buy(Long productId, Integer quantity) {
+        service.buy(productId, quantity);
+    }
+
     @PostMapping("/optimistic/v1")
     public void buyWithRetryV1(Long productId, Integer quantity) {
         int retry = 3;
