@@ -1,13 +1,11 @@
 package com.example.javapractice.transactional.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
+@ToString
 @Getter
-@Entity
+@Entity(name = "orders")
 @AllArgsConstructor
 @NoArgsConstructor
 public class Order {
