@@ -10,8 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CouponService {
 
     @Transactional(propagation = Propagation.NESTED)
-    public void apply(Long orderId, String code) {
+    public void apply(Long orderId, FailFlag flag) {
         // 일부 작업 기록 후, 조건에 따라 예외 발생해 nested 롤백 실험
-        if ("BOOM".equals(code)) throw new RuntimeException("coupon failed");
+        if (flag == FailFlag.COUPON) throw new RuntimeException("coupon error");
     }
 }

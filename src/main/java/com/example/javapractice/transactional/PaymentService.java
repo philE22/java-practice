@@ -16,9 +16,9 @@ public class PaymentService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void pay(Long orderId, int amount, boolean failFlag) {
-        paymentRepository.save(new Payment(null, orderId, failFlag ? "FAILED" : "PAID", amount));
+    public void pay(Long orderId, int amount, FailFlag flag) {
+        paymentRepository.save(new Payment(null, orderId, "PAID", amount));
 
-        if (failFlag) throw new RuntimeException("payment gateway error");
+        if (flag == FailFlag.PAYMENT) throw new RuntimeException("payment error");
     }
 }

@@ -14,8 +14,9 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void send(Long orderId) {
+    public void send(Long orderId, FailFlag flag) {
         // 트랜잭션 없이 즉시 저장됨 (오토커밋처럼 동작)
         notificationRepository.save(new Notification(null, orderId, "EMAIL", true));
+        if (flag == FailFlag.NOTI) throw new RuntimeException("noti error");
     }
 }

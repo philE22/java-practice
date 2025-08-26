@@ -48,8 +48,8 @@ public class TxPropagationTest {
     }
 
     @Test
-    void 전체_성공() {
-        Long orderId = orderService.placeOrder("SKU1", 2, 1000, null, true, false);
+    void 전체_성공_시나리오() {
+        Long orderId = orderService.placeOrder("SKU1", 2, 1000, FailFlag.NONE);
 
         // 커밋 결과 재조회
         Order order = orderRepo.findById(orderId).orElseThrow();

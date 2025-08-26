@@ -13,8 +13,9 @@ public class InventoryService {
     private final InventoryRepository repository;
 
     @Transactional // REQUIRED
-    public void reserve(String sku, int qty) {
+    public void reserve(String sku, int qty, FailFlag flag) {
         Inventory inventory = repository.findBySku(sku).orElseThrow();
         inventory.decrease(qty);
+        if (flag == FailFlag.INVENTORY) throw new RuntimeException("inventory error");
     }
 }
