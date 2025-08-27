@@ -30,9 +30,9 @@ public class TxPropagationTest {
     @Autowired
     PaymentRepository payRepo;
     @Autowired
-    NotificationRepository notiRepo;
-    @Autowired
     AuditLogRepository auditRepo;
+    @Autowired
+    TestEntityRepository testRepo;
 
     @BeforeEach
     void setup() {
@@ -40,7 +40,7 @@ public class TxPropagationTest {
         orderRepo.deleteAllInBatch();
         invRepo.deleteAllInBatch();
         payRepo.deleteAllInBatch();
-        notiRepo.deleteAllInBatch();
+        testRepo.deleteAllInBatch();
         auditRepo.deleteAllInBatch();
 
         // init
@@ -49,15 +49,16 @@ public class TxPropagationTest {
 
     @Test
     void 전체_성공_시나리오() {
+        // when
         Long orderId = orderService.placeOrder("SKU1", 2, 1000, FailFlag.NONE);
 
-        // 커밋 결과 재조회
+        // then
         Order order = orderRepo.findById(orderId).orElseThrow();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+//        assertThat(order.getMessage()).isEqualTo("REQUIRED");   // REQUIRED인 전파 속성에서만 영속성이 유지된다
 
         assertThat(invRepo.findBySku("SKU1").get().getQuantity()).isEqualTo(8);
 
-        // REQUIRES_NEW 커밋 여부
         List<Payment> pays = payRepo.findAll();
         pays.forEach(System.out::println);
         assertThat(pays).hasSize(1);
@@ -66,8 +67,8 @@ public class TxPropagationTest {
         auditLogs.forEach(System.out::println);
         assertThat(auditLogs).hasSize(2);
 
-        // NOT_SUPPORTED 저장 여부
-        List<Notification> notis = notiRepo.findAll();
-        assertThat(notis).hasSize(1);
+        List<TestEntity> tests = testRepo.findAll();
+        assertThat(tests).hasSize(2);
+        tests.forEach(System.out::println);
     }
 }

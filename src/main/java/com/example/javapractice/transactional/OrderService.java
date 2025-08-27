@@ -10,21 +10,19 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final CouponService couponService;
     private final AuditService audit;
     private final PaymentService payment;
     private final InventoryService inventory;
-    private final NotificationService notification;
+    private final NotSupportedService notsupportedService;
+    private final RequiresNewService requiresNewService;
 
     @Transactional // REQUIRED (outer tx)
     public Long placeOrder(String sku, int qty, int amount, FailFlag flag) {
-
-        Order order = orderRepository.save(new Order(null, OrderStatus.CREATED));
+        // 일반적인 비지니스 흐름
+        Order order = orderRepository.save(new Order(null, OrderStatus.CREATED, null));
         audit.record("order created: " + order.getId(), flag);
 
-        inventory.reserve(sku, qty, flag);
-
-        applyCoupon(order, flag);
+        inventory.reserve(sku, qty, order, flag);
 
         try {
             payment.pay(order.getId(), amount, flag);
@@ -35,14 +33,13 @@ public class OrderService {
             throw payEx; // 또는 주석처리해 비교 실험
         }
 
-        notification.send(order.getId(), flag);
-
         audit.record("order finished: " + order.getId() + " status=" + order.getStatus(), flag);
+
+        // 테스트를 위한 흐름
+        notsupportedService.apply(order, flag);
+        requiresNewService.apply(order, flag);
+
         return order.getId();
     }
 
-    private void applyCoupon(Order order, FailFlag flag) {
-        try { couponService.apply(order.getId(), flag); }
-        catch (Exception e) { audit.record("coupon failed: " + e.getMessage(), flag); }
-    }
 }

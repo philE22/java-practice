@@ -11,9 +11,12 @@ import lombok.*;
 public class Order {
     @Id
     @GeneratedValue
-    Long id;
+    private Long id;
 
     @Setter
     @Enumerated(EnumType.STRING)
-    OrderStatus status;
+    private OrderStatus status;
+
+    @Setter
+    private String message;
 }

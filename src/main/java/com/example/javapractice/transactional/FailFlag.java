@@ -5,9 +5,9 @@ public enum FailFlag {
     ORDER,
     AUDIT_FIRST,
     INVENTORY,
-    COUPON,
     PAYMENT,
-    NOTI,
     AUDIT_SECOND,
+    REQUIRES_NEW,
+    NOT_SUPPORTED,
     ;
 }

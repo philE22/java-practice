@@ -2,5 +2,5 @@ package com.example.javapractice.transactional.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface NotificationRepository extends JpaRepository<Notification, Long> {
+public interface TestEntityRepository extends JpaRepository<TestEntity, Long> {
 }

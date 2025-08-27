@@ -13,13 +13,9 @@ import lombok.ToString;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-public class Notification {
+public class TestEntity {
     @Id @GeneratedValue
     Long id;
 
-    Long orderId;
-
-    String channel;
-
-    boolean sent;
+    String message;
 }
