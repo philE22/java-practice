@@ -1,8 +1,7 @@
 package com.example.javapractice.transactional;
 
-import com.example.javapractice.transactional.domain.Order;
-import com.example.javapractice.transactional.domain.TestEntity;
-import com.example.javapractice.transactional.domain.TestEntityRepository;
+import com.example.javapractice.transactional.domain.SomeEntity;
+import com.example.javapractice.transactional.domain.SomeEntityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -12,13 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RequiresNewService {
 
-    private final TestEntityRepository testEntityRepository;
+    private final SomeEntityRepository someEntityRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void apply(Order order, FailFlag flag) {
-        testEntityRepository.save(new TestEntity(null, "REQUIRES_NEW"));
+    public void apply(FailFlag flag) {
+        SomeEntity entity = new SomeEntity(null, "REQUIRES_NEW");
+        someEntityRepository.save(entity);
 
-        order.setMessage("REQUIRES_NEW");
+        entity.setMessage("REQUIRES_NEW modified");
 
         if (flag == FailFlag.REQUIRES_NEW) throw new RuntimeException("REQUIRES NEW error");
     }

@@ -18,9 +18,6 @@ public class InventoryService {
         Inventory inventory = repository.findBySku(sku).orElseThrow();
         inventory.decrease(qty);
 
-        // REQUIRED 에서 영속성이 이어지는지 테스트
-        order.setMessage("REQUIRED");
-
         if (flag == FailFlag.INVENTORY) throw new RuntimeException("inventory error");
     }
 }

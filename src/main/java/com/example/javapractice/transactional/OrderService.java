@@ -1,10 +1,14 @@
 package com.example.javapractice.transactional;
 
-import com.example.javapractice.transactional.domain.*;
+import com.example.javapractice.transactional.domain.Order;
+import com.example.javapractice.transactional.domain.OrderRepository;
+import com.example.javapractice.transactional.domain.OrderStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -18,7 +22,6 @@ public class OrderService {
 
     @Transactional // REQUIRED (outer tx)
     public Long placeOrder(String sku, int qty, int amount, FailFlag flag) {
-        // 일반적인 비지니스 흐름
         Order order = orderRepository.save(new Order(null, OrderStatus.CREATED, null));
         audit.record("order created: " + order.getId(), flag);
 
@@ -29,15 +32,17 @@ public class OrderService {
             order.setStatus(OrderStatus.PAID);
         } catch (RuntimeException payEx) {
             order.setStatus(OrderStatus.FAILED);
-            // 여기서 예외를 던지면 outer 전체 롤백, 삼키면 outer를 계속 진행
-            throw payEx; // 또는 주석처리해 비교 실험
+            order.setMessage("결제 실패");
+
+            audit.record("payment fail order: " + order.getId(), flag);
+            log.error("{} 주문 결제 실패", order.getId(), payEx);
         }
 
         audit.record("order finished: " + order.getId() + " status=" + order.getStatus(), flag);
 
-        // 테스트를 위한 흐름
-        notsupportedService.apply(order, flag);
-        requiresNewService.apply(order, flag);
+        // 전파속성 테스트
+        notsupportedService.apply(flag);
+        requiresNewService.apply(flag);
 
         return order.getId();
     }

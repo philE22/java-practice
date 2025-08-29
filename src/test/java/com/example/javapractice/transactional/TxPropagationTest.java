@@ -32,7 +32,7 @@ public class TxPropagationTest {
     @Autowired
     AuditLogRepository auditRepo;
     @Autowired
-    TestEntityRepository testRepo;
+    SomeEntityRepository testRepo;
 
     @BeforeEach
     void setup() {
@@ -49,26 +49,95 @@ public class TxPropagationTest {
 
     @Test
     void 전체_성공_시나리오() {
-        // when
-        Long orderId = orderService.placeOrder("SKU1", 2, 1000, FailFlag.NONE);
+        //given
+        FailFlag flag = FailFlag.NONE;
 
-        // then
-        Order order = orderRepo.findById(orderId).orElseThrow();
+        //when
+        Long orderId = orderService.placeOrder("SKU1", 2, 1000, flag);
+
+        //then
+        Order order = orderRepo.findById(orderId).get();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
-//        assertThat(order.getMessage()).isEqualTo("REQUIRED");   // REQUIRED인 전파 속성에서만 영속성이 유지된다
 
-        assertThat(invRepo.findBySku("SKU1").get().getQuantity()).isEqualTo(8);
+        int quantity = invRepo.findBySku("SKU1").get().getQuantity();
+        assertThat(quantity).isEqualTo(8);
 
         List<Payment> pays = payRepo.findAll();
-        pays.forEach(System.out::println);
         assertThat(pays).hasSize(1);
+        assertThat(pays.getFirst().getOrderId()).isEqualTo(orderId);
+        assertThat(pays.getFirst().getStatus()).isEqualTo("PAID");
 
         List<AuditLog> auditLogs = auditRepo.findAll();
-        auditLogs.forEach(System.out::println);
-        assertThat(auditLogs).hasSize(2);
+        assertThat(auditLogs).hasSize(2)
+                .extracting(AuditLog::getMessage)
+                .containsExactly(
+                        "order created: " + orderId,
+                        "order finished: " + orderId + " status=PAID"
+                );
 
-        List<TestEntity> tests = testRepo.findAll();
-        assertThat(tests).hasSize(2);
-        tests.forEach(System.out::println);
+        List<SomeEntity> tests = testRepo.findAll();
+        assertThat(tests).hasSize(2)
+                .extracting(SomeEntity::getMessage)
+                .containsExactly(
+                        "NOT_SUPPORTED",    // NOT_SUPPORTED 는 트랜잭션이 적용되지 않음으로 변경안됨
+                        "REQUIRES_NEW modified"     // REQUIRES_NEW 는 트랜잭션이 적용되므로 변경
+                );
     }
+
+    @Test
+    void 결제가_실패하는_경우() {
+        //given
+        FailFlag flag = FailFlag.PAYMENT;
+
+        // when
+        Long orderId = orderService.placeOrder("SKU1", 2, 1000, flag);
+
+        //then
+        Order order = orderRepo.findById(orderId).get();
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.FAILED);
+
+        Inventory sku = invRepo.findBySku("SKU1").get();
+        assertThat(sku.getQuantity()).isEqualTo(8);
+
+        List<Payment> pays = payRepo.findAll();
+        assertThat(pays).hasSize(0);
+
+        List<AuditLog> auditLogs = auditRepo.findAll();
+        assertThat(auditLogs).hasSize(3)
+                .extracting(AuditLog::getMessage)
+                .containsExactly(
+                        "order created: " + orderId,
+                        "payment fail order: " + orderId,
+                        "order finished: " + orderId + " status=FAILED"
+                );
+        List<SomeEntity> tests = testRepo.findAll();
+        assertThat(tests).hasSize(2)
+                .extracting(SomeEntity::getMessage)
+                .containsExactly(
+                        "NOT_SUPPORTED",    // NOT_SUPPORTED 는 트랜잭션이 적용되지 않음으로 변경안됨
+                        "REQUIRES_NEW modified"     // REQUIRES_NEW 는 트랜잭션이 적용되므로 변경
+                );
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
