@@ -23,7 +23,7 @@ public class OrderService {
     @Transactional // REQUIRED (outer tx)
     public Long placeOrder(String sku, int qty, int amount, FailFlag flag) {
         Order order = orderRepository.save(new Order(null, OrderStatus.CREATED, null));
-        audit.record("order created: " + order.getId(), flag);
+        audit.record("order created: " + order.getId(), flag, 1);
 
         inventory.reserve(sku, qty, order, flag);
 
@@ -34,11 +34,11 @@ public class OrderService {
             order.setStatus(OrderStatus.FAILED);
             order.setMessage("결제 실패");
 
-            audit.record("payment fail order: " + order.getId(), flag);
+            audit.record("payment fail order: " + order.getId(), flag, 2);
             log.error("{} 주문 결제 실패", order.getId(), payEx);
         }
 
-        audit.record("order finished: " + order.getId() + " status=" + order.getStatus(), flag);
+        audit.record("order finished: " + order.getId() + " status=" + order.getStatus(), flag, 2); // 여기서 실패하면,
 
         // 전파속성 테스트
         notsupportedService.apply(flag);

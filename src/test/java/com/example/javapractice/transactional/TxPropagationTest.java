@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @Transactional 을 생략하는 것과 동작은 동일하지만, `NOT_SUPPORTED` 를 명시하여 의도를 명확히 합니다.
@@ -68,24 +69,24 @@ public class TxPropagationTest {
         assertThat(pays.getFirst().getStatus()).isEqualTo("PAID");
 
         List<AuditLog> auditLogs = auditRepo.findAll();
-        assertThat(auditLogs).hasSize(2)
-                .extracting(AuditLog::getMessage)
-                .containsExactly(
+        assertThat(auditLogs)
+                .hasSize(2)
+                .extracting(AuditLog::getMessage).containsExactly(
                         "order created: " + orderId,
                         "order finished: " + orderId + " status=PAID"
                 );
 
         List<SomeEntity> tests = testRepo.findAll();
-        assertThat(tests).hasSize(2)
-                .extracting(SomeEntity::getMessage)
-                .containsExactly(
-                        "NOT_SUPPORTED",    // NOT_SUPPORTED 는 트랜잭션이 적용되지 않음으로 변경안됨
+        assertThat(tests)
+                .hasSize(2)
+                .extracting(SomeEntity::getMessage).containsExactly(
+                        "NOT_SUPPORTED",    // NOT_SUPPORTED 는 트랜잭션이 적용되지 않음으로 변경(더티체크)안됨
                         "REQUIRES_NEW modified"     // REQUIRES_NEW 는 트랜잭션이 적용되므로 변경
                 );
     }
 
     @Test
-    void 결제가_실패하는_경우() {
+    void 결제_실패_시나리오() {
         //given
         FailFlag flag = FailFlag.PAYMENT;
 
@@ -111,33 +112,82 @@ public class TxPropagationTest {
                         "order finished: " + orderId + " status=FAILED"
                 );
         List<SomeEntity> tests = testRepo.findAll();
-        assertThat(tests).hasSize(2)
-                .extracting(SomeEntity::getMessage)
-                .containsExactly(
+        assertThat(tests)
+                .hasSize(2)
+                .extracting(SomeEntity::getMessage).containsExactly(
                         "NOT_SUPPORTED",    // NOT_SUPPORTED 는 트랜잭션이 적용되지 않음으로 변경안됨
                         "REQUIRES_NEW modified"     // REQUIRES_NEW 는 트랜잭션이 적용되므로 변경
                 );
     }
 
+    @Test
+    void 재고처리_실패_시나리오() {
+        //given
+        FailFlag flag = FailFlag.INVENTORY;
 
+        //when then
+        assertThatThrownBy(() -> orderService.placeOrder("SKU1", 2, 1000, flag))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("inventory error");
 
+        assertThat(orderRepo.findAll()).hasSize(0);
+        assertThat(invRepo.findBySku("SKU1").get().getQuantity()).isEqualTo(10);
+        assertThat(payRepo.findAll()).hasSize(0);
+        List<AuditLog> auditLogs = auditRepo.findAll();
+        assertThat(auditLogs).hasSize(1);   // 예외 발생 전의 audit은 정상 저장됨
+        assertThat(auditLogs.getFirst().getMessage()).contains("order created: ");
+    }
 
+    @Test
+    void 첫번째_감사로그_에러() {
+        //given
+        FailFlag flag = FailFlag.AUDIT_FIRST;
 
+        //when then
+        assertThatThrownBy(() -> orderService.placeOrder("SKU1", 2, 1000, flag))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("audit 1 error");
 
+        assertThat(orderRepo.findAll()).hasSize(0);
+        assertThat(invRepo.findBySku("SKU1").get().getQuantity()).isEqualTo(10);
+        assertThat(payRepo.findAll()).hasSize(0);
+        assertThat(auditRepo.findAll()).hasSize(0);
+    }
 
+    @Test
+    void 두번째_감사로그_에러() {
+        //given
+        FailFlag flag = FailFlag.AUDIT_SECOND;
 
+        //when then
+        assertThatThrownBy(() -> orderService.placeOrder("SKU1", 2, 1000, flag))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("audit 2 error");
 
+        assertThat(orderRepo.findAll()).hasSize(0);
+        assertThat(invRepo.findBySku("SKU1").get().getQuantity()).isEqualTo(10);
+        assertThat(payRepo.findAll()).hasSize(1);
+        List<AuditLog> auditLogs = auditRepo.findAll();
+        assertThat(auditLogs).hasSize(1);
+        assertThat(auditLogs.getFirst().getMessage()).contains("order created: ");
+    }
 
+    @Test
+    void NOT_SUPPORTED_에러_테스트() {
+        //given
+        FailFlag flag = FailFlag.NOT_SUPPORTED;
 
+        //when then
+        assertThatThrownBy(() -> orderService.placeOrder("SKU1", 2, 1000, flag))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("not supported error");
 
-
-
-
-
-
-
-
-
-
-
+        assertThat(orderRepo.findAll()).hasSize(0);
+        assertThat(invRepo.findBySku("SKU1").get().getQuantity()).isEqualTo(10);
+        List<AuditLog> auditLogs = auditRepo.findAll();
+        assertThat(auditLogs).hasSize(2);
+        assertThat(auditLogs.getFirst().getMessage()).contains("order created: ");
+        assertThat(auditLogs.getLast().getMessage()).contains("order finished: ");
+        assertThat(payRepo.findAll()).hasSize(1);
+    }
 }
